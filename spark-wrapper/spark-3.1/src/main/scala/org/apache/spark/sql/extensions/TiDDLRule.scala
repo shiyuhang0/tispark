@@ -18,32 +18,12 @@ package org.apache.spark.sql.extensions
 import com.pingcap.tispark.TiDBRelation
 import org.apache.spark.sql.{SparkSession, TiContext}
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.plans.logical.{
-  DescribeColumn,
-  DescribeRelation,
-  LogicalPlan,
-  SetCatalogAndNamespace,
-  ShowColumns,
-  ShowNamespaces
-}
+import org.apache.spark.sql.catalyst.plans.logical.{DescribeColumn, DescribeRelation, LogicalPlan, SetCatalogAndNamespace, ShowColumns, ShowNamespaces}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.connector.catalog.{CatalogManager, Identifier}
-import org.apache.spark.sql.execution.command.{
-  CreateTableLikeCommand,
-  DescribeColumnCommand,
-  DescribeTableCommand,
-  DescribeTableInfo,
-  ShowColumnsCommand,
-  ShowTablesCommand,
-  TiCreateTableLikeCommand,
-  TiDescribeColumnCommand,
-  TiDescribeTablesCommand,
-  TiSetDatabaseCommand,
-  TiShowColumnsCommand,
-  TiShowDatabasesCommand,
-  TiShowTablesCommand
-}
+import org.apache.spark.sql.execution.command.{CreateTableLikeCommand, DescribeColumnCommand, DescribeTableCommand, DescribeTableInfo, ShowColumnsCommand, ShowTablesCommand, TiCreateTableLikeCommand, TiDescribeColumnCommand, TiDescribeTablesCommand, TiSetDatabaseCommand, TiShowColumnsCommand, TiShowDatabasesCommand, TiShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation
 
 case class TiDDLRule(getOrCreateTiContext: SparkSession => TiContext, sparkSession: SparkSession)
     extends Rule[LogicalPlan] {
@@ -77,7 +57,7 @@ case class TiDDLRule(getOrCreateTiContext: SparkSession => TiContext, sparkSessi
         TiShowTablesCommand(tiContext, st)
       case st: ShowColumnsCommand =>
         TiShowColumnsCommand(tiContext, st)
-      case ShowColumns(LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _), _) =>
+      case ShowColumns(DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_), _) =>
         TiShowColumnsCommand(
           tiContext,
           ShowColumnsCommand(
@@ -92,7 +72,7 @@ case class TiDDLRule(getOrCreateTiContext: SparkSession => TiContext, sparkSessi
             dt.partitionSpec,
             dt.isExtended))
       case dt @ DescribeRelation(
-            LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _),
+      DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_),
             _,
             _) =>
         TiDescribeTablesCommand(
@@ -105,7 +85,7 @@ case class TiDDLRule(getOrCreateTiContext: SparkSession => TiContext, sparkSessi
       case dc: DescribeColumnCommand =>
         TiDescribeColumnCommand(tiContext, dc)
       case DescribeColumn(
-            LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _),
+      DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_),
             colNameParts,
             isExtended) =>
         TiDescribeColumnCommand(

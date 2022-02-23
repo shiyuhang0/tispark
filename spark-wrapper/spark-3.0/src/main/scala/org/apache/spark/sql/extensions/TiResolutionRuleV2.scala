@@ -40,36 +40,37 @@ case class TiResolutionRuleV2(getOrCreateTiContext: SparkSession => TiContext)(
   private lazy val sqlContext = tiContext.sqlContext
   protected val tiContext: TiContext = getOrCreateTiContext(sparkSession)
 
-  protected val resolveTiDBRelation: (TiDBTable, Seq[AttributeReference]) => LogicalPlan =
-    (tiTable, output) => {
-      if (autoLoad) {
-        StatisticsManager.loadStatisticsInfo(tiTable.tiTableInfo.get)
-      }
-      val sizeInBytes = StatisticsManager.estimateTableSize(tiTable.tiTableInfo.get)
-      val tiDBRelation = TiDBRelation(
-        tiSession,
-        TiTableReference(tiTable.databaseName, tiTable.tableName, sizeInBytes),
-        meta)(sqlContext)
-      // Use SubqueryAlias so that projects and joins can correctly resolve
-      // UnresolvedAttributes in JoinConditions, Projects, Filters, etc.
-      // todo since there is no UnresolvedAttributes, do we still need the subqueryAlias relation???
-      SubqueryAlias(tiTable.tableName, LogicalRelation(tiDBRelation, output, None, false))
-    }
-
-  protected def resolveTiDBRelations: PartialFunction[LogicalPlan, LogicalPlan] = {
-    // todo can remove this branch since the target table of insert into statement should never be a tidb table
-    case i @ InsertIntoStatement(DataSourceV2Relation(table, output, _, _, _), _, _, _, _)
-        if table.isInstanceOf[TiDBTable] =>
-      val tiTable = table.asInstanceOf[TiDBTable]
-      i.copy(table = EliminateSubqueryAliases(resolveTiDBRelation(tiTable, output)))
-    case DataSourceV2Relation(table, output, _, _, _) if table.isInstanceOf[TiDBTable] =>
-      val tiTable = table.asInstanceOf[TiDBTable]
-      resolveTiDBRelation(tiTable, output)
-  }
+//  protected val resolveTiDBRelation: (TiDBTable, Seq[AttributeReference]) => LogicalPlan =
+//    (tiTable, output) => {
+//      if (autoLoad) {
+//        StatisticsManager.loadStatisticsInfo(tiTable.tiTableInfo.get)
+//      }
+//      val sizeInBytes = StatisticsManager.estimateTableSize(tiTable.tiTableInfo.get)
+//      val tiDBRelation = TiDBRelation(
+//        tiSession,
+//        TiTableReference(tiTable.databaseName, tiTable.tableName, sizeInBytes),
+//        meta)(sqlContext)
+//      // Use SubqueryAlias so that projects and joins can correctly resolve
+//      // UnresolvedAttributes in JoinConditions, Projects, Filters, etc.
+//      // todo since there is no UnresolvedAttributes, do we still need the subqueryAlias relation???
+//      SubqueryAlias(tiTable.tableName, LogicalRelation(tiDBRelation, output, None, false))
+//    }
+//
+//  protected def resolveTiDBRelations: PartialFunction[LogicalPlan, LogicalPlan] = {
+//    // todo can remove this branch since the target table of insert into statement should never be a tidb table
+//    case i @ InsertIntoStatement(DataSourceV2Relation(table, output, _, _, _), _, _, _, _)
+//        if table.isInstanceOf[TiDBTable] =>
+//      val tiTable = table.asInstanceOf[TiDBTable]
+//      i.copy(table = EliminateSubqueryAliases(resolveTiDBRelation(tiTable, output)))
+//    case DataSourceV2Relation(table, output, _, _, _) if table.isInstanceOf[TiDBTable] =>
+//      val tiTable = table.asInstanceOf[TiDBTable]
+//      resolveTiDBRelation(tiTable, output)
+//  }
 
   override def apply(plan: LogicalPlan): LogicalPlan =
-    plan match {
-      case _ =>
-        plan transformUp resolveTiDBRelations
-    }
+    plan
+//    plan match {
+//      case _ =>
+//        plan transformUp resolveTiDBRelations
+//    }
 }

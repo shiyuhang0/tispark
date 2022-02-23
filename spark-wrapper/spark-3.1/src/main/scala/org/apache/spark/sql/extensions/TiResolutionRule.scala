@@ -44,57 +44,59 @@ case class TiResolutionRule(
   private lazy val sqlContext = tiContext.sqlContext
   protected val tiContext: TiContext = getOrCreateTiContext(sparkSession)
 
-  protected def resolveTiDBRelation(
-      withSubQueryAlias: Boolean = true): Seq[String] => LogicalPlan =
-    tableIdentifier => {
-      val dbName = getDatabaseFromIdentifier(tableIdentifier)
-      val tableName =
-        if (tableIdentifier.size == 1) tableIdentifier.head else tableIdentifier.tail.head
-      val table = meta.getTable(dbName, tableName)
-      if (table.isEmpty) {
-        throw new AnalysisException(s"Table or view '$tableName' not found in database '$dbName'")
-      }
-      if (autoLoad) {
-        StatisticsManager.loadStatisticsInfo(table.get)
-      }
-      val sizeInBytes = StatisticsManager.estimateTableSize(table.get)
-      val tiDBRelation =
-        TiDBRelation(tiSession, TiTableReference(dbName, tableName, sizeInBytes), meta)(
-          sqlContext)
-      if (withSubQueryAlias) {
-        // Use SubqueryAlias so that projects and joins can correctly resolve
-        // UnresolvedAttributes in JoinConditions, Projects, Filters, etc.
+//  protected def resolveTiDBRelation(
+//      withSubQueryAlias: Boolean = true): Seq[String] => LogicalPlan =
+//    tableIdentifier => {
+//      val dbName = getDatabaseFromIdentifier(tableIdentifier)
+//      val tableName =
+//        if (tableIdentifier.size == 1) tableIdentifier.head else tableIdentifier.tail.head
+//      val table = meta.getTable(dbName, tableName)
+//      if (table.isEmpty) {
+//        throw new AnalysisException(s"Table or view '$tableName' not found in database '$dbName'")
+//      }
+//      if (autoLoad) {
+//        StatisticsManager.loadStatisticsInfo(table.get)
+//      }
+//      val sizeInBytes = StatisticsManager.estimateTableSize(table.get)
+//      val tiDBRelation =
+//        TiDBRelation(tiSession, TiTableReference(dbName, tableName, sizeInBytes), meta)(
+//          sqlContext)
+//      if (withSubQueryAlias) {
+//        // Use SubqueryAlias so that projects and joins can correctly resolve
+//        // UnresolvedAttributes in JoinConditions, Projects, Filters, etc.
+//
+//        // Authorize for Select statement
+//        //if return is SubqueryAlias(tableIdentifier, LogicalRelation(tiDBRelation)),this Authorize can be delete
+//        TiAuthorization.authorizeForSelect(tableName, dbName, tiContext.tiAuthorization)
+//
+//        SubqueryAlias(tableName, LogicalRelation(tiDBRelation))
+//      } else {
+//        LogicalRelation(tiDBRelation)
+//      }
+//    }
 
-        // Authorize for Select statement
-        //if return is SubqueryAlias(tableIdentifier, LogicalRelation(tiDBRelation)),this Authorize can be delete
-        TiAuthorization.authorizeForSelect(tableName, dbName, tiContext.tiAuthorization)
-
-        SubqueryAlias(tableName, LogicalRelation(tiDBRelation))
-      } else {
-        LogicalRelation(tiDBRelation)
-      }
-    }
-
-  override def apply(plan: LogicalPlan): LogicalPlan =
-    plan transformUp resolveTiDBRelations
-
-  protected def resolveTiDBRelations: PartialFunction[LogicalPlan, LogicalPlan] = {
-    case i @ InsertIntoStatement(UnresolvedRelation(tableIdentifier, _, _), _, _, _, _, _)
-        if tiCatalog
-          .catalogOf(tableIdentifier)
-          .exists(_.isInstanceOf[TiSessionCatalog]) =>
-      i.copy(table = EliminateSubqueryAliases(resolveTiDBRelation()(tableIdentifier)))
-    case UnresolvedRelation(tableIdentifier, _, _)
-        if tiCatalog
-          .catalogOf(tableIdentifier)
-          .exists(_.isInstanceOf[TiSessionCatalog]) =>
-      resolveTiDBRelation()(tableIdentifier)
-    case UnresolvedTableOrView(tableIdentifier, _, _)
-        if tiCatalog
-          .catalogOf(tableIdentifier)
-          .exists(_.isInstanceOf[TiSessionCatalog]) =>
-      resolveTiDBRelation(false)(tableIdentifier)
+  override def apply(plan: LogicalPlan): LogicalPlan = {
+    plan
+ //   plan transformUp resolveTiDBRelations
   }
+
+  //  protected def resolveTiDBRelations: PartialFunction[LogicalPlan, LogicalPlan] = {
+//    case i @ InsertIntoStatement(UnresolvedRelation(tableIdentifier, _, _), _, _, _, _, _)
+//        if tiCatalog
+//          .catalogOf(tableIdentifier)
+//          .exists(_.isInstanceOf[TiSessionCatalog]) =>
+//      i.copy(table = EliminateSubqueryAliases(resolveTiDBRelation()(tableIdentifier)))
+//    case UnresolvedRelation(tableIdentifier, _, _)
+//        if tiCatalog
+//          .catalogOf(tableIdentifier)
+//          .exists(_.isInstanceOf[TiSessionCatalog]) =>
+//      resolveTiDBRelation()(tableIdentifier)
+//    case UnresolvedTableOrView(tableIdentifier, _, _)
+//        if tiCatalog
+//          .catalogOf(tableIdentifier)
+//          .exists(_.isInstanceOf[TiSessionCatalog]) =>
+//      resolveTiDBRelation(false)(tableIdentifier)
+//  }
 
   private def getDatabaseFromIdentifier(tableIdentifier: Seq[String]): String = {
     if (tableIdentifier.size == 1) {

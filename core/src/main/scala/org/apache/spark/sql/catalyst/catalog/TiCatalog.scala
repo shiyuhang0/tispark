@@ -17,9 +17,11 @@ package org.apache.spark.sql.catalyst.catalog
 
 import com.pingcap.tikv.meta.TiTableInfo
 import com.pingcap.tikv.{TiConfiguration, TiSession}
-import com.pingcap.tispark.MetaManager
+import com.pingcap.tispark.{MetaManager, TiDBRelation, TiTableReference}
 import com.pingcap.tispark.auth.TiAuthorization
 import com.pingcap.tispark.utils.TiUtil
+import com.pingcap.tispark.write.TiDBOptions
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchNamespaceException, NoSuchTableException}
 import org.apache.spark.sql.connector.catalog._
@@ -108,6 +110,8 @@ class TiCatalog extends TableCatalog with SupportsNamespaces {
   private val logger = LoggerFactory.getLogger(getClass.getName)
   private lazy final val tiAuthorization: Option[TiAuthorization] =
     TiAuthorization.tiAuthorization
+
+  private var tisession:Option[TiSession]=None
   def setCurrentNamespace(namespace: Option[Array[String]]): Unit =
     synchronized {
       _current_namespace = namespace
@@ -130,6 +134,8 @@ class TiCatalog extends TableCatalog with SupportsNamespaces {
     val conf = TiConfiguration.createDefault(pdAddress)
     val session = TiSession.getInstance(conf)
     meta = Some(new MetaManager(session.getCatalog))
+
+    tisession = Some(session)
   }
 
   override def name(): String = _name.get
@@ -203,7 +209,11 @@ class TiCatalog extends TableCatalog with SupportsNamespaces {
     // add BATCH_READ to just keep compiler happy
     ret.capabilities.add(TableCapability.BATCH_READ)
     ret.tiTableInfo = Some(table)
-    ret
+    TiDBRelation(
+      tisession.get,
+      TiTableReference(dbName,ident.name),
+      meta.get)(SparkSession.active.sqlContext)
+
   }
 
   override def listTables(namespace: Array[String]): Array[Identifier] = {

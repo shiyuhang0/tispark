@@ -29,27 +29,12 @@ import com.pingcap.tispark.utils.{ReflectionUtil, TiUtil}
 import com.pingcap.tispark.{TiConfigConst, TiDBRelation}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{
-  Alias,
-  Ascending,
-  Attribute,
-  AttributeMap,
-  AttributeSet,
-  Descending,
-  Expression,
-  IntegerLiteral,
-  IsNull,
-  NamedExpression,
-  NullsFirst,
-  NullsLast,
-  SortOrder,
-  SubqueryExpression,
-  TiExprUtils
-}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, AttributeMap, AttributeSet, Descending, Expression, IntegerLiteral, IsNull, NamedExpression, NullsFirst, NullsLast, SortOrder, SubqueryExpression, TiExprUtils}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.v2.{DataSourceV2Relation, DataSourceV2ScanRelation}
 import org.apache.spark.sql.execution.{ColumnarCoprocessorRDD, _}
 import org.apache.spark.sql.internal.SQLConf
 import org.joda.time.{DateTime, DateTimeZone}
@@ -112,7 +97,7 @@ case class TiStrategy(getOrCreateTiContext: SparkSession => TiContext)(sparkSess
 
     plan
       .collectFirst {
-        case LogicalRelation(relation: TiDBRelation, _, _, _) =>
+        case DataSourceV2ScanRelation(relation: TiDBRelation, _, _) =>
           doPlan(relation, plan)
       }
       .toSeq
@@ -149,7 +134,7 @@ case class TiStrategy(getOrCreateTiContext: SparkSession => TiContext)(sparkSess
   protected def applyStartTs(
       ts: TiTimestamp,
       forceUpdate: Boolean = false): PartialFunction[LogicalPlan, Unit] = {
-    case LogicalRelation(r @ TiDBRelation(_, _, _, timestamp, _), _, _, _) =>
+    case DataSourceV2ScanRelation(r @ TiDBRelation(_, _, _, timestamp, _),  _,_) =>
       if (timestamp == null || forceUpdate) {
         r.ts = ts
       }
@@ -319,7 +304,7 @@ case class TiStrategy(getOrCreateTiContext: SparkSession => TiContext)(sparkSess
 
   private def collectLimit(limit: Int, child: LogicalPlan): SparkPlan =
     child match {
-      case PhysicalOperation(projectList, filters, LogicalRelation(source: TiDBRelation, _, _, _))
+      case PhysicalOperation(projectList, filters, DataSourceV2ScanRelation(source: TiDBRelation, _, _))
           if filters.forall(TiExprUtils.isSupportedFilter(_, source, blocklist)) =>
         pruneTopNFilterProject(limit, projectList, filters, source, Nil)
       case _ => planLater(child)
@@ -336,7 +321,7 @@ case class TiStrategy(getOrCreateTiContext: SparkSession => TiContext)(sparkSess
     }
 
     child match {
-      case PhysicalOperation(projectList, filters, LogicalRelation(source: TiDBRelation, _, _, _))
+      case PhysicalOperation(projectList, filters, DataSourceV2ScanRelation(source: TiDBRelation, _, _))
           if filters.forall(TiExprUtils.isSupportedFilter(_, source, blocklist)) =>
         val refinedOrders = refineSortOrder(projectList, sortOrder, source)
         if (refinedOrders.isEmpty) {
@@ -581,7 +566,7 @@ case class TiStrategy(getOrCreateTiContext: SparkSession => TiContext)(sparkSess
       case PhysicalOperation(
             projectList,
             filters,
-            LogicalRelation(source: TiDBRelation, _, _, _)) =>
+        DataSourceV2ScanRelation(source: TiDBRelation, _, _)) =>
         pruneFilterProject(projectList, filters, source, newTiDAGRequest()) :: Nil
 
       // Basic logic of original Spark's aggregation plan is:

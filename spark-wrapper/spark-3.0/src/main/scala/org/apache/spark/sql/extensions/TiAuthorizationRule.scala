@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation
 import org.apache.spark.sql.{SparkSession, TiContext}
 
 /**
@@ -65,7 +66,7 @@ case class TiAuthorizationRule(getOrCreateTiContext: SparkSession => TiContext)(
         tiAuthorization)
       dt
     case dt @ DescribeRelation(
-          LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _),
+    DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_),
           _,
           _) =>
       TiAuthorization.authorizeForDescribeTable(

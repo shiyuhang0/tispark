@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation
 import org.apache.spark.sql.{SparkSession, TiContext}
 
 /**
@@ -56,7 +57,7 @@ case class TiAuthorizationRule(getOrCreateTiContext: SparkSession => TiContext)(
         tiContext.getDatabaseFromOption(databaseName),
         tiAuthorization)
       st
-    case sc @ ShowColumns(LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _), _) =>
+    case sc @ ShowColumns(DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_), _) =>
       TiAuthorization.authorizeForDescribeTable(
         tableRef.tableName,
         tableRef.databaseName,
@@ -69,7 +70,7 @@ case class TiAuthorizationRule(getOrCreateTiContext: SparkSession => TiContext)(
         tiAuthorization)
       dt
     case dt @ DescribeRelation(
-          LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _),
+    DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_),
           _,
           _) =>
       TiAuthorization.authorizeForDescribeTable(
@@ -84,7 +85,7 @@ case class TiAuthorizationRule(getOrCreateTiContext: SparkSession => TiContext)(
         tiAuthorization)
       dc
     case dc @ DescribeColumn(
-          LogicalRelation(TiDBRelation(_, tableRef, _, _, _), _, _, _),
+    DataSourceV2Relation(TiDBRelation(_, tableRef, _, _, _), _, _, _,_),
           colNameParts,
           isExtended) =>
       TiAuthorization.authorizeForDescribeTable(

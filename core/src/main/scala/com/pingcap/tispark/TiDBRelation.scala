@@ -21,13 +21,18 @@ import com.pingcap.tikv.key.Handle
 import com.pingcap.tikv.meta.{TiDAGRequest, TiTableInfo, TiTimestamp}
 import com.pingcap.tispark.utils.TiUtil
 import com.pingcap.tispark.write.{TiDBOptions, TiDBWriter}
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
+import org.apache.spark.sql.connector.catalog.{SupportsDelete, SupportsRead, Table, TableCapability}
+import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, InsertableRelation}
 import org.apache.spark.sql.tispark.{TiHandleRDD, TiRowRDD}
 import org.apache.spark.sql.types.{ArrayType, LongType, Metadata, ObjectType, StructType}
+import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, execution}
 
+import java.util
 import scala.collection.mutable.ListBuffer
 
 case class TiDBRelation(
@@ -35,9 +40,27 @@ case class TiDBRelation(
     tableRef: TiTableReference,
     meta: MetaManager,
     var ts: TiTimestamp = null,
-    options: Option[TiDBOptions] = None)(@transient val sqlContext: SQLContext)
-    extends BaseRelation
-    with InsertableRelation {
+    options: Option[TiDBOptions] = None)(@transient val sqlContext: SQLContext) extends BaseRelation with Table with SupportsRead with SupportsDelete
+    {
+      implicit class IdentifierHelper(identifier: TableIdentifier) {
+        def quoted: String = {
+          identifier.database match {
+            case Some(db) =>
+              Seq(db, identifier.table).map(quote).mkString(".")
+            case _ =>
+              quote(identifier.table)
+
+          }
+        }
+
+        private def quote(part: String): String = {
+          if (part.contains(".") || part.contains("`")) {
+            s"`${part.replace("`", "``")}`"
+          } else {
+            part
+          }
+        }
+      }
   lazy val table: TiTableInfo = getTableOrThrow(tableRef.databaseName, tableRef.tableName)
 
   override lazy val schema: StructType = TiUtil.getSchemaFromTable(table)
@@ -61,7 +84,7 @@ case class TiDBRelation(
     progress / table.getPartitionInfo.getDefs.size()
   }
 
-  override def sizeInBytes: Long = tableRef.sizeInBytes
+ // override def sizeInBytes: Long = tableRef.sizeInBytes
 
   def logicalPlanToRDD(dagRequest: TiDAGRequest, output: Seq[Attribute]): List[TiRowRDD] = {
     import scala.collection.JavaConverters._
@@ -131,20 +154,20 @@ case class TiDBRelation(
         false
     }
 
-  override def insert(data: DataFrame, overwrite: Boolean): Unit =
-    // default forbid sql interface
-    // cause tispark provide `replace` instead of `insert` semantic
-    if (session.getConf.isWriteAllowSparkSQL) {
-      val saveMode = if (overwrite) {
-        SaveMode.Overwrite
-      } else {
-        SaveMode.Append
-      }
-      TiDBWriter.write(data, sqlContext, saveMode, options.get)
-    } else {
-      throw new TiBatchWriteException(
-        "SparkSQL entry for tispark write is disabled. Set spark.tispark.write.allow_spark_sql to enable.")
-    }
+//  override def insert(data: DataFrame, overwrite: Boolean): Unit =
+//    // default forbid sql interface
+//    // cause tispark provide `replace` instead of `insert` semantic
+//    if (session.getConf.isWriteAllowSparkSQL) {
+//      val saveMode = if (overwrite) {
+//        SaveMode.Overwrite
+//      } else {
+//        SaveMode.Append
+//      }
+//      TiDBWriter.write(data, sqlContext, saveMode, options.get)
+//    } else {
+//      throw new TiBatchWriteException(
+//        "SparkSQL entry for tispark write is disabled. Set spark.tispark.write.allow_spark_sql to enable.")
+//    }
 
   override def toString: String = {
     s"TiDBRelation($tableRef, $ts)"
@@ -166,4 +189,21 @@ case class TiDBRelation(
             .mkString("[", ",", "]"))
       }
     }
-}
+
+      override def name(): String = "test"
+
+      override def capabilities(): util.Set[TableCapability] = {
+        val capabilities = new util.HashSet[TableCapability]
+        capabilities.add(TableCapability.BATCH_READ)
+        capabilities.add(TableCapability.BATCH_WRITE)
+        capabilities
+      }
+
+      override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder = () => () => schema
+
+      override def deleteWhere(filters: Array[Filter]): Unit = {
+        for(i<-filters.indices){
+          println(filters(i))
+        }
+      }
+    }
