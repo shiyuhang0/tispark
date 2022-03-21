@@ -63,6 +63,8 @@ Here are the main steps:
 6. encode record & index to (encodeKey, encodeValue), notice that encodeValue is empty
 7. Execute 2PC
 
+<img src="imgs/delete-support/delete_step.png" width = 50% height = 50% alt="delete" align=center/>
+
 ![image alt text](imgs/delete-support/delete_step.png)
 
 ### Parse filters to WHERE clause
