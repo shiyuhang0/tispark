@@ -74,7 +74,7 @@ see [here](https://github.com/pingcap/tispark/wiki/Feature-Support-Detail) for m
 - If `spark.sql.ansi.enabled` is false an overflow of sum(bigint) will not cause an error but “wrap” the result, or you can cast bigint to decimal to avoid the overflow.
 
 ## Follow us
-
+a
 ### Twitter
 
 [@PingCAP](https://twitter.com/PingCAP)
