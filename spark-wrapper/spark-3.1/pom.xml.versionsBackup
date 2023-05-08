@@ -5,31 +5,44 @@
     <parent>
         <groupId>com.pingcap.tispark</groupId>
         <artifactId>tispark-parent</artifactId>
-        <version>3.2.1-epoch</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>3.2.1</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>db-random-test</artifactId>
+    <artifactId>spark-wrapper-spark-3.1_${scala.version.release}</artifactId>
     <packaging>jar</packaging>
-    <name>Database Random Test Framework</name>
+    <name>TiSpark Project Spark Wrapper Spark-3.1</name>
     <url>http://github.copm/pingcap/tispark</url>
+
+    <properties>
+        <spark.version.wrapper>${spark3_1.version}</spark.version.wrapper>
+    </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.pingcap.tikv</groupId>
-            <artifactId>tikv-client</artifactId>
+            <groupId>com.pingcap.tispark</groupId>
+            <artifactId>tispark-core-internal</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <!-- For tests -->
         <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-            <version>${scalatest.version}</version>
-            <scope>test</scope>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.12</artifactId>
+            <version>${spark.version.wrapper}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-catalyst_2.12</artifactId>
+            <version>${spark.version.wrapper}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.12</artifactId>
+            <version>${spark.version.wrapper}</version>
         </dependency>
     </dependencies>
 
     <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -66,7 +79,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>2.3.2</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -89,26 +102,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Javadoc Plug-in -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
-                <configuration>
-                    <skip>${javadoc.skip}</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration> <!-- add this to disable checking -->
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Scala Format Plug-in -->
             <plugin>
                 <groupId>org.antipathy</groupId>
@@ -124,36 +117,6 @@
                         <param>${project.basedir}/src/test/scala</param>
                     </testSourceDirectories>
                 </configuration>
-            </plugin>
-            <!-- Scalatest runs all Scala tests -->
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-                <version>2.0.0</version>
-                <!-- Note config is repeated in surefire config -->
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <junitxml>.</junitxml>
-                    <filereports>SparkTestSuite.txt</filereports>
-                    <argLine>-ea -Xmx6g -Xss4m -XX:ReservedCodeCacheSize=${CodeCacheSize} -Dfile.encoding=UTF-8 -Duser.timezone=GMT+8 -Dio.netty.leakDetection.level=paranoid -Dio.netty.tryReflectionSetAccessible=true</argLine>
-                    <stderr/>
-                    <environmentVariables>
-                        <JAVA_HOME>${test.java.home}</JAVA_HOME>
-                    </environmentVariables>
-                    <systemProperties>
-                        <log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
-                    </systemProperties>
-                    <tagsToExclude>${test.exclude.tags}</tagsToExclude>
-                    <tagsToInclude>${test.include.tags}</tagsToInclude>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
