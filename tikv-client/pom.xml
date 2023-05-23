@@ -183,7 +183,7 @@
         <dependency>
             <groupId>org.tikv</groupId>
             <artifactId>tikv-client-java</artifactId>
-            <version>3.3.4-epoch</version>
+            <version>3.3.4-azfail</version>
         </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
