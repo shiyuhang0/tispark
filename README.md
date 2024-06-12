@@ -1,7 +1,7 @@
 # TiSpark
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.pingcap.tispark/tispark-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.pingcap.tispark/tispark-parent)
-[![License](https://img.shields.io/github/license/pingcap/tispark.svg)](https://github.com/pingcap/tispark/blob/master/LICENSE)
+[![License](https://img.ashields.io/github/license/pingcap/tispark.svg)](https://github.com/pingcap/tispark/blob/master/LICENSE)
 
 TiSpark is a thin layer built for running Apache Spark on top of TiDB/TiKV/TiFlash to answer complex OLAP queries. It enjoys the merits of both the Spark platform and the distributed clusters of TiKV/TiFlash while seamlessly integrated to TiDB.
 
