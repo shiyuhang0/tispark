@@ -9,6 +9,7 @@ The figure below show the architecture of TiSpark.
 
 ![architecture](./docs/architecture.png)
 
+
 + TiSpark integrates well with the Spark Catalyst Engine. It provides precise control of computing, which allows Spark to read data from TiKV efficiently. It also supports index seek, which significantly improves the performance of the point query execution.
 + It utilizes several strategies to push down computing to reduce the size of dataset handling by Spark SQL, which accelerates query execution. It also uses the TiDB built-in statistical information for the query plan optimization.
 + From the perspective of data integration, TiSpark + TiDB provides a solution that performs both transaction and analysis directly on the same platform without building and maintaining any ETLs. It simplifies the system architecture and reduces the cost of maintenance.
@@ -75,7 +76,7 @@ see [here](https://github.com/pingcap/tispark/wiki/Feature-Support-Detail) for m
 - TiSpark supports retrieving data from table with `Expression Index`, but the `Expression Index` will not be used by the planner of TiSpark.
 
 ## Follow us
-
+a
 ### Twitter
 
 [@PingCAP](https://twitter.com/PingCAP)
@@ -89,3 +90,4 @@ For Chinese users, go to [AskTUG](https://asktug.com).
 ## License
 
 TiSpark is under the Apache 2.0 license. See the [LICENSE](./LICENSE) file for details.
+aa
