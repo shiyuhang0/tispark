@@ -56,4 +56,8 @@ object TiConfigConst {
 
   val CHUNK_CODEC_FORMAT: String = "chunk"
   val DEFAULT_CODEC_FORMAT: String = "chblock"
+
+  // cache load
+  val LOAD_TABLES: String = "spark.tispark.load_tables"
+  val DEFAULT_LOAD_TABLES: Boolean = true
 }
