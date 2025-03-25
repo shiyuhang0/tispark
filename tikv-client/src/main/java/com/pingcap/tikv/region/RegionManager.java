@@ -67,7 +67,7 @@ public class RegionManager {
   }
 
   public synchronized void setCacheInvalidateCallback(
-          Function<CacheInvalidateEvent, Void> cacheInvalidateCallback) {
+      Function<CacheInvalidateEvent, Void> cacheInvalidateCallback) {
     this.cacheInvalidateCallback = cacheInvalidateCallback;
   }
 
@@ -190,12 +190,16 @@ public class RegionManager {
     cache.invalidateStore(storeId);
   }
 
+  public void invalidateAllStoreAndRegion() {
+    cache.invalidateAllStoreAndRegion();
+  }
+
   public void invalidateRegion(TiRegion region) {
     cache.invalidateRegion(region);
   }
 
   public void invalidateRange(ByteString startKey, ByteString endKey) {
-    cache.invalidateRange(startKey,endKey);
+    cache.invalidateRange(startKey, endKey);
   }
 
   public static class RegionCache {
@@ -263,7 +267,8 @@ public class RegionManager {
     private synchronized void invalidateRange(ByteString startKey, ByteString endKey) {
       regionCache.remove(makeRange(startKey, endKey));
       if (logger.isDebugEnabled()) {
-        logger.debug(String.format("invalidateRange success, startKey[%s], endKey[%s]", startKey, endKey));
+        logger.debug(
+            String.format("invalidateRange success, startKey[%s], endKey[%s]", startKey, endKey));
       }
     }
 
@@ -288,6 +293,7 @@ public class RegionManager {
     public synchronized void invalidateAllRegionForStore(long storeId) {
       List<TiRegion> regionToRemove = new ArrayList<>();
       for (TiRegion r : regionCache.asMapOfRanges().values()) {
+        logger.debug(String.format("clean region %d", r.getId()));
         if (r.getLeader().getStoreId() == storeId) {
           if (logger.isDebugEnabled()) {
             logger.debug(String.format("invalidateAllRegionForStore Region[%s]", r));
@@ -304,6 +310,15 @@ public class RegionManager {
 
     public synchronized void invalidateStore(long storeId) {
       storeCache.remove(storeId);
+    }
+
+    public synchronized void invalidateAllStoreAndRegion() {
+      logger.info(
+          String.format(
+              "clean all regions and stores, cache store size is %d, cache region size is %d",
+              storeCache.size(), regionCache.asMapOfRanges().size()));
+      storeCache.clear();
+      regionCache.clear();
     }
 
     public synchronized Store getStoreById(long id, BackOffer backOffer) {
