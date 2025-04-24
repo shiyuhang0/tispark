@@ -94,6 +94,8 @@ public class TiConfiguration implements Serializable {
 
   private List<TiStoreType> isolationReadEngines = DEF_ISOLATION_READ_ENGINES;
 
+  private boolean loadTables = true;
+
   public static TiConfiguration createDefault(String pdAddrsStr) {
     Objects.requireNonNull(pdAddrsStr, "pdAddrsStr is null");
     TiConfiguration conf = new TiConfiguration();
@@ -356,5 +358,13 @@ public class TiConfiguration implements Serializable {
 
   public void setKvClientConcurrency(int kvClientConcurrency) {
     this.kvClientConcurrency = kvClientConcurrency;
+  }
+
+  public void setLoadTables(boolean loadTables) {
+    this.loadTables = loadTables;
+  }
+
+  public boolean getLoadTables() {
+    return loadTables;
   }
 }
